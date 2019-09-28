@@ -13,7 +13,7 @@ It uses type annotations to automatically read and write `NamedTuple` or
 `@dataclass` objects to or from delimited text files.
 
 As of right now, it only knows about Python scalar types constructible from
-strings as well as `typing.Optional`.
+strings (and a hack for `bool`) as well as `typing.Optional`.
 
 ### Basic example
 ```python
