@@ -1,22 +1,3 @@
-# antibiotics
-### NamedTuple / dataclasses <-> delimited text
-
-> "The best treatment for acute episodes of PANDAS is to treat the strep
-infection causing the symptoms, if it is still present, with antibiotics."  
--- [National Institute of Mental Health](https://www.nimh.nih.gov/health/publications/pandas/index.shtml)
-
-`antibiotics` is a minimalist type-driven serialization/deserialization library
-inspired by [Serde](https://serde.rs/) and
-[cassava](http://hackage.haskell.org/package/cassava).
-
-It uses type annotations to automatically read and write `NamedTuple` or
-`@dataclass` objects to or from delimited text files.
-
-As of right now, it only knows about Python scalar types constructible from
-strings as well as `typing.Optional`.
-
-### Basic example
-```python
 from antibiotics import Delimited
 from dataclasses import dataclass
 from typing import NamedTuple, Optional
@@ -67,6 +48,3 @@ if __name__ == '__main__':
     with open('nts.tsv', 'r') as f:
         for r in tsv.read(SampleNT, f, header=False):
             print(r)
-```
-
-###### a [dwt](https://github.com/derrickturk) / [terminus data science, LLC](https://www.terminusdatascience.com) joint
