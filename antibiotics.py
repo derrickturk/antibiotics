@@ -15,12 +15,12 @@
 from typing import Any, Iterable, List, Optional, TextIO, Type, Union
 from typing import Generic, TypeVar
 
-from dataclasses import dataclass
+import dataclasses as dc
 
 _T = TypeVar('_T')
 _U = TypeVar('_U')
 
-@dataclass
+@dc.dataclass
 class Delimited():
     sep: str = ','
     quote: Optional[str] = '"'
@@ -78,21 +78,36 @@ def _field_names(cls: Type) -> List[str]:
     try:
         return cls._fields
     except:
-        raise ValueError("This type is not a NamedTuple or @dataclass.")
+        pass
+    try:
+        return [f.name for f in dc.fields(cls)]
+    except:
+        pass
+    raise ValueError("This type is not a NamedTuple or @dataclass.")
 
 def _field_types(cls: Type) -> List[Type]:
     # TODO: dataclass case
     try:
         return [ty for _, ty in cls._field_types.items()]
     except:
-        raise ValueError("This type is not a NamedTuple or @dataclass.")
+        pass
+    try:
+        return [f.type for f in dc.fields(cls)]
+    except:
+        pass
+    raise ValueError("This type is not a NamedTuple or @dataclass.")
 
 def _field_vals(cls: Type[_U], rec: _U) -> List[Any]:
     # TODO: dataclass case
     try:
         return list(rec)
     except:
-        raise ValueError("This type is not a NamedTuple or @dataclass.")
+        pass
+    try:
+        return dc.astuple(rec)
+    except:
+        pass
+    raise ValueError("This type is not a NamedTuple or @dataclass.")
 
 def _is_optional(ty: Type) -> bool:
     # see: https://stackoverflow.com/questions/49171189/whats-the-correct-way-to-check-if-an-object-is-a-typing-generic
