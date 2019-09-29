@@ -12,8 +12,17 @@ inspired by [Serde](https://serde.rs/) and
 It uses type annotations to automatically read and write `NamedTuple` or
 `@dataclass` objects to or from delimited text files.
 
-As of right now, it only knows about Python scalar types constructible from
-strings (and a hack for `bool`) as well as `typing.Optional`.
+Out of the box, it only knows about Python scalar types and `typing.Union`s
+of them (including `typing.Optional`), but an extension mechanism for
+arbitrary type-directed serialization and deserialization is provided
+through the `type_serde` argument to the `Delimited` constructor - see
+`examples/advanced.py`.
+
+For `Union` types, serialization is driven by the runtime type,
+and deserialization is attempted in the order of declaration of the
+`Union` arguments - except that `NoneType` is tried first if present,
+to preserve the expected behavior when deserializing null/missing values
+of types whose deserializers do not throw when receiving `''` as an argument.
 
 ### Basic example
 ```python
