@@ -26,15 +26,12 @@ class Delimited():
     sep: str = ','
     quote: Optional[str] = '"'
     escape: Optional[str] = '"'
-    type_serde: TypeSerDeMap = None # type: ignore
+    type_serde: TypeSerDeMap = dc.field(default_factory=dict)
 
     def __post_init__(self) -> None:
         updates = self.type_serde
-        if updates is not None:
-            self.type_serde = _TYPE_SERDE.copy()
-            self.type_serde.update(updates)
-        else:
-            self.type_serde = _TYPE_SERDE.copy()
+        self.type_serde = _TYPE_SERDE.copy()
+        self.type_serde.update(updates)
 
     def write(self, cls: Type[_T], recs: Iterable[_T], stream: TextIO,
             header: bool = True) -> None:
