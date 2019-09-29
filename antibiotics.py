@@ -50,8 +50,10 @@ class Delimited():
 
     def read_header(self, cls: Type, stream: TextIO) -> None:
         hdr = self._split(stream.readline().rstrip('\n'))
-        if hdr != _field_names(cls):
-            raise ValueError('Invalid header for provided type.')
+        expected = _field_names(cls)
+        if hdr != expected:
+            raise ValueError(
+                f'Invalid header for provided type: expected {expected}, found {hdr}.')
 
     def read_record(self, cls: Type[_T], stream: TextIO) -> Optional[_T]:
         line = stream.readline()
