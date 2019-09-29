@@ -95,11 +95,22 @@ class Delimited():
         vals = _field_vals(type(rec), rec)
         elems = list()
         for ty, v in zip(tys, vals):
-            # TODO
-            if _optional_type(ty) and v is None:
-                elems.append('')
+            if _union_types(ty):
+                # v could be one of several types: just use its runtime
+                #   type as an index
+                try:
+                    elems.append(self.type_serde[type(v)][0](v))
+                except KeyError as ex:
+                    raise TypeError(
+                            f'Unsupported type in serialization: {v}: {type(v)} as {ty}.'
+                    ) from ex
             else:
-                elems.append(self.type_serde[type(v)][0](v))
+                try:
+                    elems.append(self.type_serde[ty][0](v))
+                except KeyError as ex:
+                    raise TypeError(
+                        f'Unsupported type in serialization: {v} as {ty}.'
+                    ) from ex
         return elems
 
     def _split(self, line: str) -> List[str]:
@@ -142,14 +153,31 @@ class Delimited():
                 f'Record length {len(elems)} does not match required field count ({len(tys)}).')
         vals: List[Any] = list()
         for ty, e in zip(tys, elems):
-            # TODO
-            opt_ty = _optional_type(ty)
-            if opt_ty:
-                ty = opt_ty
-                if e == '':
-                    vals.append(None)
-                    continue
-            vals.append(self.type_serde[ty][1](e))
+            un_tys = _union_types(ty)
+            if un_tys:
+                found = False
+                for try_ty in un_tys:
+                    try:
+                        vals.append(self.type_serde[try_ty][1](e))
+                        found = True
+                        break
+                    except KeyError as ex:
+                        raise TypeError(
+                                f'Unsupported type in deserialization: "{e}" as {try_ty}.'
+                        ) from ex
+                    except:
+                        pass
+                if not found:
+                    raise ValueError(f'Unable to parse "{e}" as {ty}')
+            else:
+                try:
+                    vals.append(self.type_serde[ty][1](e))
+                except KeyError as ex:
+                    raise TypeError(
+                            f'Unsupported type in deserialization: "{e}" as {ty}.'
+                    ) from ex
+                except Exception as ex:
+                    raise ValueError('Unable to parse "{e}" as {ty}.') from ex
         return cls(*vals) # type: ignore
 
 def _field_names(cls: Type) -> List[str]:
@@ -185,14 +213,18 @@ def _field_vals(cls: Type[_T], rec: _T) -> List[Any]:
         pass
     raise ValueError("This type is not a NamedTuple or @dataclass.")
 
-def _optional_type(ty: Type) -> Optional[Type]:
+def _union_types(ty: Type) -> Optional[List[Type]]:
     # see: https://stackoverflow.com/questions/49171189/whats-the-correct-way-to-check-if-an-object-is-a-typing-generic
     try:
-        if (ty.__origin__ == Union and type(None) in ty.__args__
-                and len(ty.__args__) == 2):
-            return [t for t in ty.__args__ if t != type(None)][0]
-        else:
-            return None
+        if ty.__origin__ == Union:
+            # move NoneType to front of list, so it gets tried
+            #   first in deserialization, ensuring "correct" behavior when
+            #   deserializing types Optional[T] where the deserializer for T
+            #   does not fail on a '' argument - that is, ensure we prioritize
+            #   deserializing None for empty strings when necessary.
+            return ([a for a in ty.__args__ if a == type(None)] +
+                    [a for a in ty.__args__ if a != type(None)])
+        return None
     except:
         return None
 
