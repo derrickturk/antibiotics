@@ -31,7 +31,7 @@ class ExcelRecord(NamedTuple):
     Rate: ExcelFloat
 
 if __name__ == '__main__':
-    csv = Delimited(type_serde = {
+    csv = Delimited(type_serde_ext = {
         ExcelFloat: (ExcelFloat.to_string, ExcelFloat.from_string)
     })
 

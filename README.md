@@ -15,7 +15,7 @@ It uses type annotations to automatically read and write `NamedTuple` or
 Out of the box, it only knows about Python scalar types and `typing.Union`s
 of them (including `typing.Optional`), but an extension mechanism for
 arbitrary type-directed serialization and deserialization is provided
-through the `type_serde` argument to the `Delimited` constructor - see
+through the `type_serde_ext` argument to the `Delimited` constructor - see
 `examples/advanced.py`.
 
 For `Union` types, serialization is driven by the runtime type,

@@ -21,17 +21,44 @@ _T = TypeVar('_T')
 
 TypeSerDeMap = Dict[Type, Tuple[Callable[[Any], str], Callable[[str], Any]]]
 
+def _id(x: _T) -> _T:
+    return x
+
+def _bool_from_str(s: str) -> bool:
+    if s == 'False':
+        return False
+    if s == 'True':
+        return True
+    raise ValueError(f'Unrecognized boolean value "{s}".')
+
+def _none_from_str(s: str) -> None:
+    if s == '':
+        return None
+    else:
+        raise ValueError(f'Found "{s}"; expected empty string (NoneType).')
+
+_TYPE_SERDE: TypeSerDeMap = {
+    bool: (str, _bool_from_str),
+    int: (str, int),
+    float: (str, float),
+    complex: (str, complex),
+    str: (_id, _id),
+    bytes: (lambda b: b.decode('utf8'), lambda s: s.encode('utf8')),
+    type(None): (lambda _: '', _none_from_str),
+}
+
 @dc.dataclass
 class Delimited():
     sep: str = ','
     quote: Optional[str] = '"'
     escape: Optional[str] = '"'
-    type_serde: TypeSerDeMap = dc.field(default_factory=dict)
+    type_serde_ext: dc.InitVar[Optional[TypeSerDeMap]] = None
+    type_serde: TypeSerDeMap = dc.field(
+            default_factory=_TYPE_SERDE.copy, init=False)
 
-    def __post_init__(self) -> None:
-        updates = self.type_serde
-        self.type_serde = _TYPE_SERDE.copy()
-        self.type_serde.update(updates)
+    def __post_init__(self, type_serde_ext: Optional[TypeSerDeMap]) -> None:
+        if type_serde_ext is not None:
+            self.type_serde.update(type_serde_ext)
 
     def write(self, cls: Type[_T], recs: Iterable[_T], stream: TextIO,
             header: bool = True) -> None:
@@ -229,29 +256,3 @@ def _union_types(ty: Type) -> Optional[List[Type]]:
         return None
     except:
         return None
-
-def _id(x: _T) -> _T:
-    return x
-
-def _bool_from_str(s: str) -> bool:
-    if s == 'False':
-        return False
-    if s == 'True':
-        return True
-    raise ValueError(f'Unrecognized boolean value "{s}".')
-
-def _none_from_str(s: str) -> None:
-    if s == '':
-        return None
-    else:
-        raise ValueError(f'Found "{s}"; expected empty string (NoneType).')
-
-_TYPE_SERDE: TypeSerDeMap = {
-    bool: (str, _bool_from_str),
-    int: (str, int),
-    float: (str, float),
-    complex: (str, complex),
-    str: (_id, _id),
-    bytes: (lambda b: b.decode('utf8'), lambda s: s.encode('utf8')),
-    type(None): (lambda _: '', _none_from_str),
-}

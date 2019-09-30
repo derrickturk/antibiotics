@@ -42,7 +42,7 @@ if __name__ == '__main__':
             FlubBlub(even)
         ))
 
-    csv = Delimited(type_serde={
+    csv = Delimited(type_serde_ext={
         FlubBlub: (str, FlubBlub.from_string),
     })
     csv.write(TrickyRecord, recs, stdout)
