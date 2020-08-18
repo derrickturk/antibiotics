@@ -1,5 +1,9 @@
+publish: build
+	twine upload dist/* -u __token__
+
 publish-test: build
 	twine upload --repository testpypi dist/* -u __token__
+
 build: dist/antibiotics-0.2-py3-none-any.whl  dist/antibiotics-0.2.tar.gz
 doc: doc/antibiotics/index.html
 

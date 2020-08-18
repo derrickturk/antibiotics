@@ -82,9 +82,9 @@ View the full [pdoc3-generated API documentation](https://ghcdn.rawgit.org/derri
 
 Install with:
 
-    pip install --index-url https://test.pypi.org/simple/ antibiotics
+    pip install antibiotics
 
-Or download directly [from Test PyPI](https://test.pypi.org/project/antibiotics/0.1/).
+Or download directly [from PyPI](https://pypi.org/project/antibiotics/).
 
 #### (c) 2020 dwt | terminus data science, LLC
 #### available under the Apache License 2.0
