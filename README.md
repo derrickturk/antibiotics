@@ -78,7 +78,7 @@ if __name__ == '__main__':
             print(r)
 ```
 
-View the full [pdoc3-generated API documentation](https://ghcdn.rawgit.org/derrickturk/antibiotics/master/doc/antibiotics/index.html).
+View the full [pdoc3-generated API documentation](https://ghcdn.rawgit.org/derrickturk/antibiotics/c2be2e1c57587723b2e1abe32e7bbfbb3e067bb1/doc/antibiotics/index.html).
 
 Install with:
 
