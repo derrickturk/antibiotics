@@ -78,5 +78,13 @@ if __name__ == '__main__':
             print(r)
 ```
 
-### (c) 2020 dwt | terminus data science, LLC
-### available under the Apache License 2.0
+View the full [pdoc3-generated API documentation](https://ghcdn.rawgit.org/derrickturk/antibiotics/master/doc/antibiotics/index.html).
+
+Install with:
+
+    pip install --index-url https://test.pypi.org/simple/ antibiotics
+
+Or download directly [from Test PyPI](https://test.pypi.org/project/antibiotics/0.1/).
+
+#### (c) 2020 dwt | terminus data science, LLC
+#### available under the Apache License 2.0
