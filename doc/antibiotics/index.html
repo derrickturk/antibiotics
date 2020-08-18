@@ -80,10 +80,54 @@ _TYPE_SERDE: TypeSerDeMap = {
 
 @dc.dataclass
 class Delimited():
+    &#39;&#39;&#39;a reader and writer for delimited data
+
+    parameters may be specified when initializing a Delimited object as either
+    positional or named arguments; the `__init__` signature is more-or-less:
+
+        Delimited(sep=&#39;,&#39;, quote=&#39;&#34;&#39;, escape=&#39;&#34;&#39;, type_serde_ext=None)
+
+    the default values are suitable for reading and writing &#34;standard&#34; CSV files
+
+    the core concept behind antibiotics is the type-driven
+      serialization/deserialization map
+
+    this map is a dictionary from types `T` to tuples of a serialization
+      function `Callable[[T], str]` and a deserialization function
+      `Callable[[str], T]`
+
+    entries provided in type_serde_ext will override any default entries
+      for the same type
+
+    default entries are provided for `bool`, `int`, `float`, `complex`,
+      `str`, `bytes`, and `None`
+
+    antibiotics automatically handles serialization/deserialization for types
+      which are unions of types with map entries - for example, `Optional[T]`
+      will use either the `None` serializer/deserializer or the `T`
+      serializer/deserializer, depending on the runtime value; deserializers
+      for union types are tried in order of declaration until one runs without
+      raising an exception
+    &#39;&#39;&#39;
+
     sep: str = &#39;,&#39;
+    &#39;&#39;&#39;the separator between delimited entries [default ,]&#39;&#39;&#39;
+
     quote: Optional[str] = &#39;&#34;&#39;
+    &#39;&#39;&#39;the character, if any, used to introduce and close quoted entries (which
+      may include the delimiter verbatim) [default &#34;]
+    &#39;&#39;&#39;
+
     escape: Optional[str] = &#39;&#34;&#39;
+    &#39;&#39;&#39;the character, if any, used to escape verbatim quote characters occurring
+      inside quoted entries [default &#34;]
+    &#39;&#39;&#39;
+
     type_serde_ext: dc.InitVar[Optional[TypeSerDeMap]] = None
+    &#39;&#39;&#39;optionally, a dictionary containing additional entries for the
+      type-driven serialization/deserialization map
+    &#39;&#39;&#39;
+
     type_serde: TypeSerDeMap = dc.field(
             default_factory=_TYPE_SERDE.copy, init=False)
 
@@ -93,20 +137,28 @@ class Delimited():
 
     def write(self, cls: Type[_T], recs: Iterable[_T], stream: TextIO,
             header: bool = True) -&gt; None:
+        &#39;&#39;&#39;write a sequence of typed records to a stream, with or
+          without a header
+        &#39;&#39;&#39;
         if header:
             self.write_header(cls, stream)
         for r in recs:
             self.write_record(r, stream)
 
     def write_header(self, cls: Type[Any], stream: TextIO) -&gt; None:
+        &#39;&#39;&#39;write an appropriate header for a given record type to a stream&#39;&#39;&#39;
         stream.write(self._delimit(_field_names(cls)))
         stream.write(&#39;\n&#39;)
 
     def write_record(self, rec: _T, stream: TextIO) -&gt; None:
+        &#39;&#39;&#39;write a single typed record to a stream&#39;&#39;&#39;
         stream.write(self._delimit(self._render(rec)))
         stream.write(&#39;\n&#39;)
 
     def read_header(self, cls: Type[Any], stream: TextIO) -&gt; None:
+        &#39;&#39;&#39;read a header for a given record type from a stream, and check it
+          against the expected field names, raising a `ValueError` on failure
+        &#39;&#39;&#39;
         hdr = self._split(stream.readline().rstrip(&#39;\n&#39;))
         expected = _field_names(cls)
         if hdr != expected:
@@ -114,6 +166,7 @@ class Delimited():
                 f&#39;Invalid header for provided type: expected {expected}, found {hdr}.&#39;)
 
     def read_record(self, cls: Type[_T], stream: TextIO) -&gt; Optional[_T]:
+        &#39;&#39;&#39;read a single typed record from a stream&#39;&#39;&#39;
         line = stream.readline()
         if line == &#39;&#39;:
             return None
@@ -121,6 +174,9 @@ class Delimited():
 
     def read(self, cls: Type[_T], stream: TextIO,
             header: bool = True) -&gt; Iterable[_T]:
+        &#39;&#39;&#39;lazily read a sequence of typed records from a stream, with or
+          without a header
+        &#39;&#39;&#39;
         if header:
             self.read_header(cls, stream)
         while True:
@@ -308,16 +364,80 @@ __all__ = [
 <span>(</span><span>sep: str = ',', quote: Union[str, NoneType] = '"', escape: Union[str, NoneType] = '"', type_serde_ext: dataclasses.InitVar[typing.Union[typing.Dict[typing.Type[typing.Any], typing.Tuple[typing.Callable[[typing.Any], str], typing.Callable[[str], typing.Any]]], NoneType]] = None)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Delimited(sep: str = ',', quote: Union[str, NoneType] = '"', escape: Union[str, NoneType] = '"', type_serde_ext: dataclasses.InitVar[typing.Union[typing.Dict[typing.Type[typing.Any], typing.Tuple[typing.Callable[[typing.Any], str], typing.Callable[[str], typing.Any]]], NoneType]] = None)</p></div>
+<div class="desc"><p>a reader and writer for delimited data</p>
+<p>parameters may be specified when initializing a Delimited object as either
+positional or named arguments; the <code>__init__</code> signature is more-or-less:</p>
+<pre><code>Delimited(sep=',', quote='"', escape='"', type_serde_ext=None)
+</code></pre>
+<p>the default values are suitable for reading and writing "standard" CSV files</p>
+<p>the core concept behind antibiotics is the type-driven
+serialization/deserialization map</p>
+<p>this map is a dictionary from types <code>T</code> to tuples of a serialization
+function <code>Callable[[T], str]</code> and a deserialization function
+<code>Callable[[str], T]</code></p>
+<p>entries provided in type_serde_ext will override any default entries
+for the same type</p>
+<p>default entries are provided for <code>bool</code>, <code>int</code>, <code>float</code>, <code>complex</code>,
+<code>str</code>, <code>bytes</code>, and <code>None</code></p>
+<p>antibiotics automatically handles serialization/deserialization for types
+which are unions of types with map entries - for example, <code>Optional[T]</code>
+will use either the <code>None</code> serializer/deserializer or the <code>T</code>
+serializer/deserializer, depending on the runtime value; deserializers
+for union types are tried in order of declaration until one runs without
+raising an exception</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class Delimited():
+    &#39;&#39;&#39;a reader and writer for delimited data
+
+    parameters may be specified when initializing a Delimited object as either
+    positional or named arguments; the `__init__` signature is more-or-less:
+
+        Delimited(sep=&#39;,&#39;, quote=&#39;&#34;&#39;, escape=&#39;&#34;&#39;, type_serde_ext=None)
+
+    the default values are suitable for reading and writing &#34;standard&#34; CSV files
+
+    the core concept behind antibiotics is the type-driven
+      serialization/deserialization map
+
+    this map is a dictionary from types `T` to tuples of a serialization
+      function `Callable[[T], str]` and a deserialization function
+      `Callable[[str], T]`
+
+    entries provided in type_serde_ext will override any default entries
+      for the same type
+
+    default entries are provided for `bool`, `int`, `float`, `complex`,
+      `str`, `bytes`, and `None`
+
+    antibiotics automatically handles serialization/deserialization for types
+      which are unions of types with map entries - for example, `Optional[T]`
+      will use either the `None` serializer/deserializer or the `T`
+      serializer/deserializer, depending on the runtime value; deserializers
+      for union types are tried in order of declaration until one runs without
+      raising an exception
+    &#39;&#39;&#39;
+
     sep: str = &#39;,&#39;
+    &#39;&#39;&#39;the separator between delimited entries [default ,]&#39;&#39;&#39;
+
     quote: Optional[str] = &#39;&#34;&#39;
+    &#39;&#39;&#39;the character, if any, used to introduce and close quoted entries (which
+      may include the delimiter verbatim) [default &#34;]
+    &#39;&#39;&#39;
+
     escape: Optional[str] = &#39;&#34;&#39;
+    &#39;&#39;&#39;the character, if any, used to escape verbatim quote characters occurring
+      inside quoted entries [default &#34;]
+    &#39;&#39;&#39;
+
     type_serde_ext: dc.InitVar[Optional[TypeSerDeMap]] = None
+    &#39;&#39;&#39;optionally, a dictionary containing additional entries for the
+      type-driven serialization/deserialization map
+    &#39;&#39;&#39;
+
     type_serde: TypeSerDeMap = dc.field(
             default_factory=_TYPE_SERDE.copy, init=False)
 
@@ -327,20 +447,28 @@ __all__ = [
 
     def write(self, cls: Type[_T], recs: Iterable[_T], stream: TextIO,
             header: bool = True) -&gt; None:
+        &#39;&#39;&#39;write a sequence of typed records to a stream, with or
+          without a header
+        &#39;&#39;&#39;
         if header:
             self.write_header(cls, stream)
         for r in recs:
             self.write_record(r, stream)
 
     def write_header(self, cls: Type[Any], stream: TextIO) -&gt; None:
+        &#39;&#39;&#39;write an appropriate header for a given record type to a stream&#39;&#39;&#39;
         stream.write(self._delimit(_field_names(cls)))
         stream.write(&#39;\n&#39;)
 
     def write_record(self, rec: _T, stream: TextIO) -&gt; None:
+        &#39;&#39;&#39;write a single typed record to a stream&#39;&#39;&#39;
         stream.write(self._delimit(self._render(rec)))
         stream.write(&#39;\n&#39;)
 
     def read_header(self, cls: Type[Any], stream: TextIO) -&gt; None:
+        &#39;&#39;&#39;read a header for a given record type from a stream, and check it
+          against the expected field names, raising a `ValueError` on failure
+        &#39;&#39;&#39;
         hdr = self._split(stream.readline().rstrip(&#39;\n&#39;))
         expected = _field_names(cls)
         if hdr != expected:
@@ -348,6 +476,7 @@ __all__ = [
                 f&#39;Invalid header for provided type: expected {expected}, found {hdr}.&#39;)
 
     def read_record(self, cls: Type[_T], stream: TextIO) -&gt; Optional[_T]:
+        &#39;&#39;&#39;read a single typed record from a stream&#39;&#39;&#39;
         line = stream.readline()
         if line == &#39;&#39;:
             return None
@@ -355,6 +484,9 @@ __all__ = [
 
     def read(self, cls: Type[_T], stream: TextIO,
             header: bool = True) -&gt; Iterable[_T]:
+        &#39;&#39;&#39;lazily read a sequence of typed records from a stream, with or
+          without a header
+        &#39;&#39;&#39;
         if header:
             self.read_header(cls, stream)
         while True:
@@ -478,19 +610,22 @@ __all__ = [
 <dl>
 <dt id="antibiotics.Delimited.escape"><code class="name">var <span class="ident">escape</span> : Union[str, NoneType]</code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>the character, if any, used to escape verbatim quote characters occurring
+inside quoted entries [default "]</p></div>
 </dd>
 <dt id="antibiotics.Delimited.quote"><code class="name">var <span class="ident">quote</span> : Union[str, NoneType]</code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>the character, if any, used to introduce and close quoted entries (which
+may include the delimiter verbatim) [default "]</p></div>
 </dd>
 <dt id="antibiotics.Delimited.sep"><code class="name">var <span class="ident">sep</span> : str</code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>the separator between delimited entries [default ,]</p></div>
 </dd>
 <dt id="antibiotics.Delimited.type_serde_ext"><code class="name">var <span class="ident">type_serde_ext</span> : dataclasses.InitVar[typing.Union[typing.Dict[typing.Type[typing.Any], typing.Tuple[typing.Callable[[typing.Any], str], typing.Callable[[str], typing.Any]]], NoneType]]</code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>optionally, a dictionary containing additional entries for the
+type-driven serialization/deserialization map</p></div>
 </dd>
 </dl>
 <h3>Methods</h3>
@@ -499,13 +634,17 @@ __all__ = [
 <span>def <span class="ident">read</span></span>(<span>self, cls: Type[~_T], stream: <class 'TextIO'>, header: bool = True) ‑> Iterable[~_T]</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>lazily read a sequence of typed records from a stream, with or
+without a header</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def read(self, cls: Type[_T], stream: TextIO,
         header: bool = True) -&gt; Iterable[_T]:
+    &#39;&#39;&#39;lazily read a sequence of typed records from a stream, with or
+      without a header
+    &#39;&#39;&#39;
     if header:
         self.read_header(cls, stream)
     while True:
@@ -519,12 +658,16 @@ __all__ = [
 <span>def <span class="ident">read_header</span></span>(<span>self, cls: Type[Any], stream: <class 'TextIO'>) ‑> NoneType</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>read a header for a given record type from a stream, and check it
+against the expected field names, raising a <code>ValueError</code> on failure</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def read_header(self, cls: Type[Any], stream: TextIO) -&gt; None:
+    &#39;&#39;&#39;read a header for a given record type from a stream, and check it
+      against the expected field names, raising a `ValueError` on failure
+    &#39;&#39;&#39;
     hdr = self._split(stream.readline().rstrip(&#39;\n&#39;))
     expected = _field_names(cls)
     if hdr != expected:
@@ -536,12 +679,13 @@ __all__ = [
 <span>def <span class="ident">read_record</span></span>(<span>self, cls: Type[~_T], stream: <class 'TextIO'>) ‑> Union[~_T, NoneType]</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>read a single typed record from a stream</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def read_record(self, cls: Type[_T], stream: TextIO) -&gt; Optional[_T]:
+    &#39;&#39;&#39;read a single typed record from a stream&#39;&#39;&#39;
     line = stream.readline()
     if line == &#39;&#39;:
         return None
@@ -552,13 +696,17 @@ __all__ = [
 <span>def <span class="ident">write</span></span>(<span>self, cls: Type[~_T], recs: Iterable[~_T], stream: <class 'TextIO'>, header: bool = True) ‑> NoneType</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>write a sequence of typed records to a stream, with or
+without a header</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def write(self, cls: Type[_T], recs: Iterable[_T], stream: TextIO,
         header: bool = True) -&gt; None:
+    &#39;&#39;&#39;write a sequence of typed records to a stream, with or
+      without a header
+    &#39;&#39;&#39;
     if header:
         self.write_header(cls, stream)
     for r in recs:
@@ -569,12 +717,13 @@ __all__ = [
 <span>def <span class="ident">write_header</span></span>(<span>self, cls: Type[Any], stream: <class 'TextIO'>) ‑> NoneType</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>write an appropriate header for a given record type to a stream</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def write_header(self, cls: Type[Any], stream: TextIO) -&gt; None:
+    &#39;&#39;&#39;write an appropriate header for a given record type to a stream&#39;&#39;&#39;
     stream.write(self._delimit(_field_names(cls)))
     stream.write(&#39;\n&#39;)</code></pre>
 </details>
@@ -583,12 +732,13 @@ __all__ = [
 <span>def <span class="ident">write_record</span></span>(<span>self, rec: ~_T, stream: <class 'TextIO'>) ‑> NoneType</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>write a single typed record to a stream</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def write_record(self, rec: _T, stream: TextIO) -&gt; None:
+    &#39;&#39;&#39;write a single typed record to a stream&#39;&#39;&#39;
     stream.write(self._delimit(self._render(rec)))
     stream.write(&#39;\n&#39;)</code></pre>
 </details>

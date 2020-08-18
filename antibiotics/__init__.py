@@ -52,10 +52,54 @@ _TYPE_SERDE: TypeSerDeMap = {
 
 @dc.dataclass
 class Delimited():
+    '''a reader and writer for delimited data
+
+    parameters may be specified when initializing a Delimited object as either
+    positional or named arguments; the `__init__` signature is more-or-less:
+
+        Delimited(sep=',', quote='"', escape='"', type_serde_ext=None)
+
+    the default values are suitable for reading and writing "standard" CSV files
+
+    the core concept behind antibiotics is the type-driven
+      serialization/deserialization map
+
+    this map is a dictionary from types `T` to tuples of a serialization
+      function `Callable[[T], str]` and a deserialization function
+      `Callable[[str], T]`
+
+    entries provided in type_serde_ext will override any default entries
+      for the same type
+
+    default entries are provided for `bool`, `int`, `float`, `complex`,
+      `str`, `bytes`, and `None`
+
+    antibiotics automatically handles serialization/deserialization for types
+      which are unions of types with map entries - for example, `Optional[T]`
+      will use either the `None` serializer/deserializer or the `T`
+      serializer/deserializer, depending on the runtime value; deserializers
+      for union types are tried in order of declaration until one runs without
+      raising an exception
+    '''
+
     sep: str = ','
+    '''the separator between delimited entries [default ,]'''
+
     quote: Optional[str] = '"'
+    '''the character, if any, used to introduce and close quoted entries (which
+      may include the delimiter verbatim) [default "]
+    '''
+
     escape: Optional[str] = '"'
+    '''the character, if any, used to escape verbatim quote characters occurring
+      inside quoted entries [default "]
+    '''
+
     type_serde_ext: dc.InitVar[Optional[TypeSerDeMap]] = None
+    '''optionally, a dictionary containing additional entries for the
+      type-driven serialization/deserialization map
+    '''
+
     type_serde: TypeSerDeMap = dc.field(
             default_factory=_TYPE_SERDE.copy, init=False)
 
@@ -65,20 +109,28 @@ class Delimited():
 
     def write(self, cls: Type[_T], recs: Iterable[_T], stream: TextIO,
             header: bool = True) -> None:
+        '''write a sequence of typed records to a stream, with or
+          without a header
+        '''
         if header:
             self.write_header(cls, stream)
         for r in recs:
             self.write_record(r, stream)
 
     def write_header(self, cls: Type[Any], stream: TextIO) -> None:
+        '''write an appropriate header for a given record type to a stream'''
         stream.write(self._delimit(_field_names(cls)))
         stream.write('\n')
 
     def write_record(self, rec: _T, stream: TextIO) -> None:
+        '''write a single typed record to a stream'''
         stream.write(self._delimit(self._render(rec)))
         stream.write('\n')
 
     def read_header(self, cls: Type[Any], stream: TextIO) -> None:
+        '''read a header for a given record type from a stream, and check it
+          against the expected field names, raising a `ValueError` on failure
+        '''
         hdr = self._split(stream.readline().rstrip('\n'))
         expected = _field_names(cls)
         if hdr != expected:
@@ -86,6 +138,7 @@ class Delimited():
                 f'Invalid header for provided type: expected {expected}, found {hdr}.')
 
     def read_record(self, cls: Type[_T], stream: TextIO) -> Optional[_T]:
+        '''read a single typed record from a stream'''
         line = stream.readline()
         if line == '':
             return None
@@ -93,6 +146,9 @@ class Delimited():
 
     def read(self, cls: Type[_T], stream: TextIO,
             header: bool = True) -> Iterable[_T]:
+        '''lazily read a sequence of typed records from a stream, with or
+          without a header
+        '''
         if header:
             self.read_header(cls, stream)
         while True:
