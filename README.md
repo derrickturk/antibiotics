@@ -78,4 +78,5 @@ if __name__ == '__main__':
             print(r)
 ```
 
-###### a [dwt](https://github.com/derrickturk) / [terminus data science, LLC](https://www.terminusdatascience.com) joint
+### (c) 2020 dwt | terminus data science, LLC
+### available under the Apache License 2.0
