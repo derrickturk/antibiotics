@@ -11,7 +11,7 @@ setuptools.setup(
     author='Derrick W. Turk',
     author_email='dwt@terminusdatascience.com',
     url='https://github.com/derrickturk/antibiotics',
-    version='0.1',
+    version='0.2',
     packages=setuptools.find_packages(),
     classifiers=[
         'License :: OSI Approved :: Apache Software License',
