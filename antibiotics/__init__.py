@@ -1,4 +1,4 @@
-#  Copyright 2019 terminus data science, LLC
+#  Copyright 2020 terminus data science, LLC
 
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -12,14 +12,17 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from typing import Any, Callable, Dict, Iterable, List, Optional, TextIO
+from typing import cast, Any, Callable, Dict, Iterable, List, Optional, TextIO
 from typing import Tuple, Type, TypeVar, Union
 
 import dataclasses as dc
 
 _T = TypeVar('_T')
 
-TypeSerDeMap = Dict[Type, Tuple[Callable[[Any], str], Callable[[str], Any]]]
+TypeSerDeMap = Dict[
+    Type[Any],
+    Tuple[Callable[[Any], str], Callable[[str], Any]]
+]
 
 def _id(x: _T) -> _T:
     return x
@@ -43,7 +46,7 @@ _TYPE_SERDE: TypeSerDeMap = {
     float: (str, float),
     complex: (str, complex),
     str: (_id, _id),
-    bytes: (lambda b: b.decode('utf8'), lambda s: s.encode('utf8')),
+    bytes: (lambda b: cast(str, b.decode('utf8')), lambda s: s.encode('utf8')),
     type(None): (lambda _: '', _none_from_str),
 }
 
@@ -67,7 +70,7 @@ class Delimited():
         for r in recs:
             self.write_record(r, stream)
 
-    def write_header(self, cls: Type, stream: TextIO) -> None:
+    def write_header(self, cls: Type[Any], stream: TextIO) -> None:
         stream.write(self._delimit(_field_names(cls)))
         stream.write('\n')
 
@@ -75,7 +78,7 @@ class Delimited():
         stream.write(self._delimit(self._render(rec)))
         stream.write('\n')
 
-    def read_header(self, cls: Type, stream: TextIO) -> None:
+    def read_header(self, cls: Type[Any], stream: TextIO) -> None:
         hdr = self._split(stream.readline().rstrip('\n'))
         expected = _field_names(cls)
         if hdr != expected:
@@ -207,9 +210,9 @@ class Delimited():
                     ) from ex
                 except Exception as ex:
                     raise ValueError('Unable to parse "{e}" as {ty}.') from ex
-        return cls(*vals) # type: ignore
+        return cls(*vals)
 
-def _field_names(cls: Type) -> List[str]:
+def _field_names(cls: Type[Any]) -> List[str]:
     try:
         return list(cls._fields)
     except:
@@ -220,7 +223,7 @@ def _field_names(cls: Type) -> List[str]:
         pass
     raise ValueError("This type is not a NamedTuple or @dataclass.")
 
-def _field_types(cls: Type) -> List[Type]:
+def _field_types(cls: Type[Any]) -> List[Type[Any]]:
     try:
         return [ty for _, ty in cls._field_types.items()]
     except:
@@ -242,7 +245,7 @@ def _field_vals(cls: Type[_T], rec: _T) -> List[Any]:
         pass
     raise ValueError("This type is not a NamedTuple or @dataclass.")
 
-def _union_types(ty: Type) -> Optional[List[Type]]:
+def _union_types(ty: Type[Any]) -> Optional[List[Type[Any]]]:
     # see: https://stackoverflow.com/questions/49171189/whats-the-correct-way-to-check-if-an-object-is-a-typing-generic
     try:
         if ty.__origin__ == Union:
@@ -256,3 +259,8 @@ def _union_types(ty: Type) -> Optional[List[Type]]:
         return None
     except:
         return None
+
+__all__ = [
+    'TypeSerDeMap',
+    'Delimited',
+]
