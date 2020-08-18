@@ -8,7 +8,7 @@ from io import StringIO
 class ExcelFloat(NamedTuple):
     value: float
 
-    def to_string(self):
+    def to_string(self) -> str:
         s = str(self.value)
         whole, frac = s.split('.')
         if len(whole) > 3:

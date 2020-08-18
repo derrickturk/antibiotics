@@ -10,14 +10,14 @@ class FlubBlub():
     def __init__(self, flub: bool):
         self.flub = flub
 
-    def __str__(self):
+    def __str__(self) -> str:
         if self.flub:
             return 'Flub'
         else:
             return 'Blub'
 
     @classmethod
-    def from_string(cls, s: str):
+    def from_string(cls, s: str) -> 'FlubBlub':
         if s == 'Flub':
             return FlubBlub(True)
         if s == 'Blub':

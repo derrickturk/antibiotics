@@ -42,9 +42,9 @@ if __name__ == '__main__':
         tsv.write(SampleNT, dcs, f, header=False)
 
     with open('dcs.csv', 'r') as f:
-        for r in csv.read(SampleDC, f):
-            print(r)
+        for dc in csv.read(SampleDC, f):
+            print(dc)
 
     with open('nts.tsv', 'r') as f:
-        for r in tsv.read(SampleNT, f, header=False):
-            print(r)
+        for nt in tsv.read(SampleNT, f, header=False):
+            print(nt)
