@@ -12,9 +12,10 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+import types
 import typing
 from typing import cast, Annotated, Any, Callable, Dict, Iterable, List
-from typing import NamedTuple, Optional, TextIO, Tuple, Type, TypeVar, Union
+from typing import NamedTuple, Optional, TextIO, Tuple, Type, TypeVar
 
 import dataclasses as dc
 
@@ -146,6 +147,8 @@ class Delimited():
         '''write a single typed record to a stream'''
         stream.write(self._delimit(self._render(rec)))
         stream.write('\n')
+
+    # TODO: death to readline (we have to do what `csv` does)
 
     def read_header(self, cls: Type[Any], stream: TextIO) -> None:
         '''read a header for a given record type from a stream, and check it
@@ -325,17 +328,17 @@ def _field_vals(cls: Type[_T], rec: _T) -> List[Any]:
 
 def _union_types(ty: Type[Any]) -> Optional[List[Type[Any]]]:
     # see: https://stackoverflow.com/questions/49171189/whats-the-correct-way-to-check-if-an-object-is-a-typing-generic
-    try:
-        if ty.__origin__ == Union:
-            # move NoneType to front of list, so it gets tried
-            #   first in deserialization, ensuring "correct" behavior when
-            #   deserializing types Optional[T] where the deserializer for T
-            #   does not fail on a '' argument - that is, ensure we prioritize
-            #   deserializing None for empty strings when necessary.
-            return ([a for a in ty.__args__ if a == type(None)] +
-                    [a for a in ty.__args__ if a != type(None)])
-        return None
-    except:
+    origin = typing.get_origin(ty)
+    if origin in (typing.Union, types.UnionType):
+        args = typing.get_args(ty)
+        # move NoneType to front of list, so it gets tried
+        #   first in deserialization, ensuring "correct" behavior when
+        #   deserializing types Optional[T] where the deserializer for T
+        #   does not fail on a '' argument - that is, ensure we prioritize
+        #   deserializing None for empty strings when necessary.
+        return ([a for a in args if a is type(None)] +
+                [a for a in args if a is not type(None)])
+    else:
         return None
 
 __all__ = [
