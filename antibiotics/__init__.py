@@ -71,6 +71,8 @@ _TYPE_SERDE: TypeSerDeMap = {
     type(None): (lambda _: '', _none_from_str),
 }
 
+_BUF_SIZE: int = 1024
+
 @dc.dataclass
 class Delimited():
     '''a reader and writer for delimited data
@@ -78,7 +80,10 @@ class Delimited():
     parameters may be specified when initializing a Delimited object as either
     positional or named arguments; the `__init__` signature is more-or-less:
 
-        Delimited(sep=',', quote='"', escape='"', type_serde_ext=None)
+    ```
+    Delimited(sep=',', quote='"', escape='"', newline='\r\n',
+      type_serde_ext=None)
+    ```
 
     the default values are suitable for reading and writing "standard" CSV files
 
@@ -101,19 +106,27 @@ class Delimited():
       serializer/deserializer, depending on the runtime value; deserializers
       for union types are tried in order of declaration until one runs without
       raising an exception
+
+    much like the `csv` module, files opened for use with `antibiotics` should
+      be opened with `newline=''`
     '''
 
     sep: str = ','
-    '''the separator between delimited entries [default ,]'''
+    '''the separator between delimited entries [default `','`]'''
 
     quote: Optional[str] = '"'
     '''the character, if any, used to introduce and close quoted entries (which
-      may include the delimiter verbatim) [default "]
+      may include the delimiter verbatim) [default `'"'`]
     '''
 
     escape: Optional[str] = '"'
     '''the character, if any, used to escape verbatim quote characters occurring
-      inside quoted entries [default "]
+      inside quoted entries [default `'"'`]
+    '''
+
+    newline: str = '\r\n'
+    '''the character used to terminate lines; may occur inside quoted entries
+      [default `'\r\n'`]
     '''
 
     type_serde_ext: dc.InitVar[Optional[TypeSerDeMap]] = None
@@ -141,20 +154,18 @@ class Delimited():
     def write_header(self, cls: Type[Any], stream: TextIO) -> None:
         '''write an appropriate header for a given record type to a stream'''
         stream.write(self._delimit(_field_names(cls)))
-        stream.write('\n')
+        stream.write(self.newline)
 
     def write_record(self, rec: _T, stream: TextIO) -> None:
         '''write a single typed record to a stream'''
         stream.write(self._delimit(self._render(rec)))
-        stream.write('\n')
-
-    # TODO: death to readline (we have to do what `csv` does)
+        stream.write(self.newline)
 
     def read_header(self, cls: Type[Any], stream: TextIO) -> None:
         '''read a header for a given record type from a stream, and check it
           against the expected field names, raising a `ValueError` on failure
         '''
-        hdr = self._split(stream.readline().rstrip('\n'))
+        hdr = self._line(stream)
         expected = _field_names(cls)
         if hdr != expected:
             raise ValueError(
@@ -162,10 +173,10 @@ class Delimited():
 
     def read_record(self, cls: Type[_T], stream: TextIO) -> Optional[_T]:
         '''read a single typed record from a stream'''
-        line = stream.readline()
-        if line == '':
+        line = self._line(stream)
+        if line is None:
             return None
-        return self._parse(cls, self._split(line.rstrip('\n')))
+        return self._parse(cls, line)
 
     def read(self, cls: Type[_T], stream: TextIO,
             header: bool = True) -> Iterable[_T]:
@@ -224,42 +235,70 @@ class Delimited():
                     ) from ex
         return elems
 
-    def _split(self, line: str) -> List[str]:
+    def _line(self, stream: TextIO) -> Optional[List[str]]:
         elems = list()
-        this_elem = list()
+        this_elem: List[str] = list()
         in_quote = False
         in_escape = False
-        for c in line:
-            if in_escape:
-                this_elem.append(c)
-                in_escape = False
-                continue
+        nl_len = len(self.newline)
 
-            if in_quote:
-                if c == self.escape:
-                    in_escape = True
-                    continue
-                if c == self.quote:
-                    in_quote = False
-                    continue
-                this_elem.append(c)
-                continue
+        while True:
+            pos = stream.tell()
+            buf = stream.read(_BUF_SIZE)
+            n = len(buf)
+            if n == 0:
+                # missing final terminator
+                if this_elem:
+                    elems.append(''.join(this_elem))
+                    return elems
+                return None
 
-            if c == self.sep:
-                elems.append(''.join(this_elem))
-                this_elem = list()
-            elif c == self.quote:
-                in_quote = True
-            else:
-                this_elem.append(c)
-        elems.append(''.join(this_elem))
-        return elems
+            for i in range(n):
+                if in_escape and self.escape == self.quote:
+                    if buf[i] == self.quote:
+                        in_escape = False
+                        this_elem.append(buf[i])
+                        continue
+                    else:
+                        # that "escape" was a closing quote!
+                        in_escape = False
+                        in_quote = False
+                elif in_escape:
+                    this_elem.append(buf[i])
+                    in_escape = False
+                    continue
+
+                if in_quote:
+                    if buf[i] == self.escape:
+                        in_escape = True
+                        continue
+                    if buf[i] == self.quote:
+                        in_quote = False
+                        continue
+                    this_elem.append(buf[i])
+                    continue
+
+                if buf[i] == self.sep:
+                    elems.append(''.join(this_elem))
+                    this_elem = list()
+                elif buf[i] == self.quote:
+                    in_quote = True
+                # handle the case where we can't check for newline because it's
+                #   potentially split across reads by seeking to current
+                #   position and trying again...
+                elif i + nl_len > n:
+                    stream.seek(pos + i, 0)
+                    break # to continue the while
+                elif buf[i:i + nl_len] == self.newline:
+                    elems.append(''.join(this_elem))
+                    stream.seek(pos + i + nl_len, 0)
+                    return elems
+                else:
+                    this_elem.append(buf[i])
 
     def _parse(self, cls: Type[_T], elems: List[str]) -> _T:
         tys = _field_types(cls)
         if len(elems) != len(tys):
-            print(elems)
-            print(tys)
             raise ValueError(
                 f'Record length {len(elems)} does not match required field count ({len(tys)}).')
         vals: List[Any] = list()

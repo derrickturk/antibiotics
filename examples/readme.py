@@ -34,17 +34,17 @@ if __name__ == '__main__':
         ))
 
     csv = Delimited()
-    with open('dcs.csv', 'w') as f:
+    with open('dcs.csv', 'w', newline='') as f:
         csv.write(SampleDC, dcs, f)
 
     tsv = Delimited(sep='\t', escape='\\')
-    with open('nts.tsv', 'w') as f:
+    with open('nts.tsv', 'w', newline='') as f:
         tsv.write(SampleNT, dcs, f, header=False)
 
-    with open('dcs.csv', 'r') as f:
+    with open('dcs.csv', 'r', newline='') as f:
         for dc in csv.read(SampleDC, f):
             print(dc)
 
-    with open('nts.tsv', 'r') as f:
+    with open('nts.tsv', 'r', newline='') as f:
         for nt in tsv.read(SampleNT, f, header=False):
             print(nt)

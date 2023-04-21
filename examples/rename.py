@@ -21,9 +21,9 @@ if __name__ == '__main__':
         ))
 
     csv = Delimited()
-    with open('dcs.csv', 'w') as f:
+    with open('dcs.csv', 'w', newline='') as f:
         csv.write(SampleDC, dcs, f)
 
-    with open('dcs.csv', 'r') as f:
+    with open('dcs.csv', 'r', newline='') as f:
         for dc in csv.read(SampleDC, f):
             print(dc)

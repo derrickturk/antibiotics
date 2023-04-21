@@ -7,5 +7,5 @@ if __name__ == '__main__':
         bad.append(i)
 
     csv = Delimited()
-    with open('dcs.csv', 'w') as f:
+    with open('dcs.csv', 'w', newline='') as f:
         csv.write(int, bad, f)
