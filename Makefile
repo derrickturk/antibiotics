@@ -1,4 +1,4 @@
-build: dist/antibiotics-0.3.1-py3-none-any.whl dist/antibiotics-0.3.1.tar.gz
+build: dist/antibiotics-0.4-py3-none-any.whl dist/antibiotics-0.4.tar.gz
 
 check:
 	mypy --strict setup.py antibiotics examples
@@ -15,7 +15,7 @@ clean:
 	-rm doc/*
 	-rm dist/*
 
-dist/antibiotics-0.3.1-py3-none-any.whl dist/antibiotics-0.3.1.tar.gz &: antibiotics/__init__.py setup.py
+dist/antibiotics-0.4-py3-none-any.whl dist/antibiotics-0.4.tar.gz &: antibiotics/__init__.py setup.py
 	python setup.py sdist bdist_wheel
 
 doc/antibiotics/index.html: antibiotics/__init__.py

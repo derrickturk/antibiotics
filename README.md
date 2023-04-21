@@ -28,6 +28,9 @@ A type `ExternalName` is also provided which may be used with `typing.Annotated`
 to specify the name which should be used for a member when serializing or
 deserializing (e.g. to match CSV headers).
 
+Please note that as with the built-in `csv` module, file-like objects used
+with this library should be opened with `newline=''`.
+
 ### Basic example
 ```python
 from antibiotics import Delimited
@@ -66,18 +69,18 @@ if __name__ == '__main__':
         ))
 
     csv = Delimited()
-    with open('dcs.csv', 'w') as f:
+    with open('dcs.csv', 'w', newline='') as f:
         csv.write(SampleDC, dcs, f)
 
-    tsv = Delimited(sep='\t', escape='\\')
-    with open('nts.tsv', 'w') as f:
+    tsv = Delimited(sep='\t', escape='\\', newline='\n')
+    with open('nts.tsv', 'w', newline='') as f:
         tsv.write(SampleNT, dcs, f, header=False)
 
-    with open('dcs.csv', 'r') as f:
+    with open('dcs.csv', 'r', newline='') as f:
         for r in csv.read(SampleDC, f):
             print(r)
 
-    with open('nts.tsv', 'r') as f:
+    with open('nts.tsv', 'r', newline='') as f:
         for r in tsv.read(SampleNT, f, header=False):
             print(r)
 ```
@@ -107,10 +110,10 @@ if __name__ == '__main__':
         ))
 
     csv = Delimited()
-    with open('dcs.csv', 'w') as f:
+    with open('dcs.csv', 'w', newline='') as f:
         csv.write(SampleDC, dcs, f)
 
-    with open('dcs.csv', 'r') as f:
+    with open('dcs.csv', 'r', newline='') as f:
         for dc in csv.read(SampleDC, f):
             print(dc)
 ```

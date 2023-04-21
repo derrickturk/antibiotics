@@ -22,7 +22,7 @@ if __name__ == '__main__':
             f'_",\t_{i}'
         ))
 
-    csv = Delimited()
+    csv = Delimited(newline='\n')
     csv.write(SampleRecord, recs, stdout)
 
     tsv = Delimited(sep='\t', escape='\\')

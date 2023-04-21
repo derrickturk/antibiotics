@@ -241,6 +241,7 @@ class Delimited():
         in_quote = False
         in_escape = False
         nl_len = len(self.newline)
+        did_nl_seek = False
 
         while True:
             pos = stream.tell()
@@ -286,10 +287,12 @@ class Delimited():
                 # handle the case where we can't check for newline because it's
                 #   potentially split across reads by seeking to current
                 #   position and trying again...
-                elif i + nl_len > n:
+                elif i + nl_len > n and not did_nl_seek:
                     stream.seek(pos + i, 0)
+                    did_nl_seek = True
                     break # to continue the while
                 elif buf[i:i + nl_len] == self.newline:
+                    did_nl_seek = False
                     elems.append(''.join(this_elem))
                     stream.seek(pos + i + nl_len, 0)
                     return elems

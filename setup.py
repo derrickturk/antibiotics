@@ -11,16 +11,15 @@ setuptools.setup(
     author='Derrick W. Turk',
     author_email='dwt@terminusdatascience.com',
     url='https://github.com/derrickturk/antibiotics',
-    version='0.3.1',
+    version='0.4',
     packages=setuptools.find_packages(),
     classifiers=[
         'License :: OSI Approved :: Apache Software License',
-        'Programming Language :: Python :: 3.9',
         'Programming Language :: Python :: 3.10',
         'Programming Language :: Python :: 3.11',
         'Operating System :: OS Independent',
     ],
-    python_requires='>=3.9',
+    python_requires='>=3.10',
     package_data={'antibiotics': ['py.typed']},
     zip_safe=False,
 )

@@ -37,7 +37,7 @@ if __name__ == '__main__':
     with open('dcs.csv', 'w', newline='') as f:
         csv.write(SampleDC, dcs, f)
 
-    tsv = Delimited(sep='\t', escape='\\')
+    tsv = Delimited(sep='\t', escape='\\', newline='\n')
     with open('nts.tsv', 'w', newline='') as f:
         tsv.write(SampleNT, dcs, f, header=False)
 

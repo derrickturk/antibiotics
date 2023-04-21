@@ -33,7 +33,7 @@ class ExcelRecord(NamedTuple):
 if __name__ == '__main__':
     csv = Delimited(type_serde_ext = {
         ExcelFloat: (ExcelFloat.to_string, ExcelFloat.from_string)
-    })
+    }, newline='\n')
 
     csv_str = '''Time,Rate
 1,"2,000.00"
