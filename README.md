@@ -82,7 +82,48 @@ if __name__ == '__main__':
             print(r)
 ```
 
-View the full [pdocs-generated API documentation](https://ghcdn.rawgit.org/derrickturk/antibiotics/7309cf7f3686573203849131e787daebeb52b086/doc/antibiotics.html).
+### Example with custom external names
+```python
+from antibiotics import Delimited, ExternalName
+from dataclasses import dataclass
+from typing import Annotated, Optional
+
+@dataclass
+class SampleDC():
+    w: Annotated[Optional[float], ExternalName('BigW')]
+    x: Annotated[int, ExternalName('Fancy X')]
+    y: bool
+    z: str
+
+if __name__ == '__main__':
+    dcs = list()
+    for i in range(10):
+        even = i % 2 == 0
+        dcs.append(SampleDC(
+            i * 3.5 if even else None,
+            i,
+            not even,
+            f'_",\t_{i}'
+        ))
+
+    csv = Delimited()
+    with open('dcs.csv', 'w') as f:
+        csv.write(SampleDC, dcs, f)
+
+    with open('dcs.csv', 'r') as f:
+        for dc in csv.read(SampleDC, f):
+            print(dc)
+```
+
+### Documentation
+
+Documentation strings and type annotations are provided for public types and
+functions. We recommend viewing "nice" documentation pages using
+[`pdoc`](https://pdoc.dev/docs/pdoc.html); e.g. in the same environment as the
+`antibiotics` package is installed, install `pdoc` with `pip install pdoc`,
+then run `pdoc antibiotics`.
+
+---
 
 Install with:
 
@@ -90,5 +131,5 @@ Install with:
 
 Or download directly [from PyPI](https://pypi.org/project/antibiotics/).
 
-#### (c) 2020 dwt | terminus data science, LLC
+#### (c) 2023 dwt | terminus data science, LLC
 #### available under the Apache License 2.0
