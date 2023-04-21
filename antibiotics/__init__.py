@@ -12,8 +12,9 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from typing import cast, Any, Callable, Dict, Iterable, List, Optional, TextIO
-from typing import Tuple, Type, TypeVar, Union
+import typing
+from typing import cast, Annotated, Any, Callable, Dict, Iterable, List
+from typing import NamedTuple, Optional, TextIO, Tuple, Type, TypeVar, Union
 
 import dataclasses as dc
 
@@ -23,6 +24,25 @@ TypeSerDeMap = Dict[
     Type[Any],
     Tuple[Callable[[Any], str], Callable[[str], Any]]
 ]
+'''A serialization/deserialization function map by type.'''
+
+class ExternalName(NamedTuple):
+    '''Use with `typing.Annotated` to specify an external name for a member.
+
+    For example, given:
+
+    ```
+    class Example(NamedTuple):
+        x: Annotated[int, ExternalName('Fancy_X')]
+    ```
+
+    Objects of class `Example` will be read and written assuming the name
+    "Fancy_X" appears in delimited-file headers for the column corresponding
+    to the `x` data member.
+    '''
+
+    name: str
+    '''The external name.'''
 
 def _id(x: _T) -> _T:
     return x
@@ -269,26 +289,28 @@ class Delimited():
         return cls(*vals)
 
 def _field_names(cls: Type[Any]) -> List[str]:
-    try:
-        return list(cls._fields)
-    except:
-        pass
-    try:
-        return [f.name for f in dc.fields(cls)]
-    except:
-        pass
-    raise ValueError("This type is not a NamedTuple or @dataclass.")
+    annots = typing.get_type_hints(cls, include_extras=True)
+    names = []
+    for name, annot in annots.items():
+        if typing.get_origin(annot) is Annotated:
+            ext_names = [
+              n.name for n in typing.get_args(annot)
+              if isinstance(n, ExternalName)
+            ]
+
+            if len(ext_names) == 0:
+                names.append(name)
+            elif len(ext_names) > 1:
+                raise TypeError(
+                  f'Too many ExternalName annotations for field {name}.')
+            else:
+                names.append(ext_names[0])
+        else:
+            names.append(name)
+    return names
 
 def _field_types(cls: Type[Any]) -> List[Type[Any]]:
-    try:
-        return [ty for _, ty in cls._field_types.items()]
-    except:
-        pass
-    try:
-        return [f.type for f in dc.fields(cls)]
-    except:
-        pass
-    raise ValueError("This type is not a NamedTuple or @dataclass.")
+    return list(typing.get_type_hints(cls).values())
 
 def _field_vals(cls: Type[_T], rec: _T) -> List[Any]:
     try:
@@ -296,7 +318,7 @@ def _field_vals(cls: Type[_T], rec: _T) -> List[Any]:
     except:
         pass
     try:
-        return list(dc.astuple(rec))
+        return list(dc.astuple(rec)) # type: ignore
     except:
         pass
     raise ValueError("This type is not a NamedTuple or @dataclass.")
@@ -318,5 +340,6 @@ def _union_types(ty: Type[Any]) -> Optional[List[Type[Any]]]:
 
 __all__ = [
     'TypeSerDeMap',
+    'ExternalName',
     'Delimited',
 ]

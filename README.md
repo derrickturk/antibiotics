@@ -24,6 +24,10 @@ and deserialization is attempted in the order of declaration of the
 to preserve the expected behavior when deserializing null/missing values
 of types whose deserializers do not throw when receiving `''` as an argument.
 
+A type `ExternalName` is also provided which may be used with `typing.Annotated`
+to specify the name which should be used for a member when serializing or
+deserializing (e.g. to match CSV headers).
+
 ### Basic example
 ```python
 from antibiotics import Delimited
